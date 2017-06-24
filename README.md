@@ -4,7 +4,7 @@ This is an Arduino Sketch for ESP8266 to control a Pan/Tilt kit equiped with 2 s
 
 You can control it with an IR remote or with the Blynk application.
 
-#Configuration
+# Configuration
 
 ## Wifi
 
