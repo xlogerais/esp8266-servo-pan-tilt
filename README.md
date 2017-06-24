@@ -4,6 +4,12 @@ This is an Arduino Sketch for ESP8266 to control a Pan/Tilt kit equiped with 2 s
 
 You can control it with an IR remote or with the Blynk application.
 
+# Hardware
+
+* Wemos mini D1 : https://www.aliexpress.com/item/D1-mini-Mini-NodeMcu-4M-bytes-Lua-WIFI-Internet-of-Things-development-board-based-ESP8266-by/32661918901.html?traffic_analysisId=recommend_2088_2_82199_new&scm=1007.13339.82199.0&pvid=76211541-0bcf-4493-ba24-25dff04250e6&tpp=1
+* Pan Tilt : https://www.aliexpress.com/item/Samples-Free-shiping-new-original-FPV-dedicated-nylon-PTZ-20g-without-servos-for-SG90/2019819214.html
+* Servo : https://www.aliexpress.com/item/Tower-Pro-Rc-Mini-Micro-9g-1-6KG-Servo-SG90-for-RC-250-450-Helicopter-Airplane/1104513783.html?traffic_analysisId=recommend_2088_4_82199_new&scm=1007.13339.82199.0&pvid=bddc66f2-51b9-4ae5-b226-b02f1aba2904&tpp=1
+
 # Configuration
 
 ## Wifi
