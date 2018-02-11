@@ -1,4 +1,3 @@
-
 void ota_init(const char* name) {
 
   // Port defaults to 8266

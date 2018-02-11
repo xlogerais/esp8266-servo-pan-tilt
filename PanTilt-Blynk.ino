@@ -1,7 +1,7 @@
 /***************************************************
 
- Sketch for ESP8266 with WifiManager and OTA
- to control a Pan/Tilt kit via Blynk
+  Sketch for ESP8266 with WifiManager and OTA
+  to control a Pan/Tilt kit via Blynk
 
 ****************************************************/
 
@@ -73,7 +73,7 @@
 /************************* Blynk *********************************************/
 
 #define BLYNK_PRINT Serial
-// #define BLYNK_DEBUG Serial
+#define BLYNK_DEBUG Serial
 
 /************************* IR *****************************************/
 
@@ -93,8 +93,8 @@
 
 /************ Global State (you don't need to change this!) ******************/
 
-char module_name[40] = MODULE_NAME;
-char blynk_server[34] = "rpilab";
+char module_name[40]  = MODULE_NAME;
+char blynk_server[34] = "YOUR_BLYNK_SERVER";
 char blynk_port[6]    = "8442";
 char blynk_token[34]  = "YOUR_BLYNK_TOKEN";
 
@@ -104,7 +104,7 @@ bool shouldSaveConfig = false;
 //callback notifying us of the need to save config
 void saveConfigCallback () {
   Serial.println("Should save config");
-    shouldSaveConfig = true;
+  shouldSaveConfig = true;
 }
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
@@ -113,9 +113,10 @@ WiFiClient wifi;
 //WiFiClientSecure client;
 
 // IR
+#if defined(__IR__)
 IRrecv irrecv(IR_RECEIVER_PIN);
-irparams_t save;         // A place to copy the interrupt state while decoding.
 decode_results results;  // Somewhere to store the results
+#endif
 
 // Servo
 Servo pan;
@@ -136,7 +137,9 @@ void setup() {
   Serial.println("  * mDNS");
   Serial.println("  * OTA");
   Serial.println("  * Blynk");
+#if defined(__IR__)
   Serial.println("  * IRremote");
+# endif
   Serial.println("");
 
   // Read configuration file config.json from SPIFFS
@@ -211,7 +214,7 @@ void setup() {
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP"
   //and goes into a blocking loop awaiting configuration
-  if (!wifiManager.autoConnect(WLAN_SSID,WLAN_PASS)) {
+  if (!wifiManager.autoConnect(WLAN_SSID, WLAN_PASS)) {
     Serial.println("Failed to connect and hit timeout");
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
@@ -220,7 +223,7 @@ void setup() {
   }
 
   //if you get here you have connected to the WiFi
-  Serial.println("Connected...yeey :)");
+  Serial.println("Connected to wifi ... yeey :)");
 
   //read updated parameters
   strcpy(module_name,  custom_module_name.getValue());
@@ -246,9 +249,9 @@ void setup() {
     json.printTo(Serial);
     json.printTo(configFile);
     configFile.close();
-    //end save
-  }
 
+  }
+  //end save
   /* Serial.print("local ip : "); */
   /* Serial.println(WiFi.localIP()); */
 
@@ -257,11 +260,13 @@ void setup() {
 
   // Blynk
   //Blynk.begin(blynk_token, WLAN_SSID, WLAN_PASS, blynk_server, String(blynk_port).toInt());
-  Blynk.config(blynk_token,blynk_server,atoi(blynk_port));
+  Blynk.config(blynk_token, blynk_server, atoi(blynk_port));
   Blynk.connect();
 
   // IR
+#if defined(__IR__)
   irrecv.enableIRIn();  // Start the receiver
+#endif
 
   // Servo
   pan.attach(PAN);
@@ -274,79 +279,90 @@ void loop() {
   if (WiFi.status() == WL_CONNECTED)
   {
 
-  // IR
-  if (irrecv.decode(&results, &save)) {
+    // IR
+#if defined(__IR__)
+    if (irrecv.decode(&results)) {
 
-    //dumpInfo(&results);           // Output the results
-    //dumpRaw(&results);            // Output the results in RAW format
-    //dumpCode(&results);           // Output the results as source code
-    //Serial.println("");           // Blank line between entries
+      //dumpInfo(&results);           // Output the results
+      //dumpRaw(&results);            // Output the results in RAW format
+      //dumpCode(&results);           // Output the results as source code
+      //Serial.println("");           // Blank line between entries
 
-    /*
-       0xE2E4 => Power
-       0xE298 => Play/Pause
-       0xE288 => Stop
-       0xE2C4 => Green  (music)
-       0xE244 => Orange (movies)
-       0xE284 => Blue   (photos)
-       0xE204 => Yellow (tv)
-     */
-    switch(results.value)
-    {
-      case 0xE2E4: // Power
-        Serial.println("IR received : Power");
-        break;
-      case 0xE298: // Play/Pause
-        Serial.println("IR received : Play/Pause");
-        break;
-      case 0xE288: // Stop
-        Serial.println("IR received : Stop");
-        break;
-      case 0xE2C4: // Green
-        Serial.println("IR received : Green/Music");
-        break;
-      case 0xE244: // Orange
-        Serial.println("IR received : Orange/Movie");
-        break;
-      case 0xE284: // Blue
-        Serial.println("IR received : Blue/Photo");
-        break;
-      case 0xE204: // Yellow
-        Serial.println("IR received : Yellow/TV");
-        break;
-      case 0xE230: // Right
-        Serial.println("IR received : Right");
-        if ( pan.read() > PAN_MIN + PAN_STEP ) { pan.write( pan.read() - PAN_STEP ); }
-        break;
-      case 0xE2B0: // Left
-        Serial.println("IR received : Left");
-        if ( pan.read() < PAN_MAX - PAN_STEP ) { pan.write( pan.read() + PAN_STEP ); }
-        break;
-      case 0xE280: // Up
-        Serial.println("IR received : Up");
-        if ( tilt.read() > TILT_MIN + TILT_STEP ) { tilt.write( tilt.read() - TILT_STEP ); }
-        break;
-      case 0xE240: // Down
-        Serial.println("IR received : Down");
-        if ( tilt.read() < TILT_MAX - TILT_STEP ) { tilt.write( tilt.read() + TILT_STEP ); }
-        break;
-      default:
-        Serial.println("IR received : Unknown");
-        // print() & println() can't handle printing long longs. (uint64_t)
-        // So we have to print the top and bottom halves separately.
-        if (results.value >> 32) Serial.print((uint32_t) (results.value >> 32), HEX);
-                                 Serial.println((uint32_t) (results.value & 0xFFFFFFFF), HEX);
-        break;
+      /*
+         0xE2E4 => Power
+         0xE298 => Play/Pause
+         0xE288 => Stop
+         0xE2C4 => Green  (music)
+         0xE244 => Orange (movies)
+         0xE284 => Blue   (photos)
+         0xE204 => Yellow (tv)
+      */
+      switch (results.value)
+      {
+        case 0xE2E4: // Power
+          Serial.println("IR received : Power");
+          break;
+        case 0xE298: // Play/Pause
+          Serial.println("IR received : Play/Pause");
+          break;
+        case 0xE288: // Stop
+          Serial.println("IR received : Stop");
+          break;
+        case 0xE2C4: // Green
+          Serial.println("IR received : Green/Music");
+          break;
+        case 0xE244: // Orange
+          Serial.println("IR received : Orange/Movie");
+          break;
+        case 0xE284: // Blue
+          Serial.println("IR received : Blue/Photo");
+          break;
+        case 0xE204: // Yellow
+          Serial.println("IR received : Yellow/TV");
+          break;
+        case 0xE230: // Right
+          Serial.println("IR received : Right");
+          if ( pan.read() > PAN_MIN + PAN_STEP ) {
+            pan.write( pan.read() - PAN_STEP );
+          }
+          break;
+        case 0xE2B0: // Left
+          Serial.println("IR received : Left");
+          if ( pan.read() < PAN_MAX - PAN_STEP ) {
+            pan.write( pan.read() + PAN_STEP );
+          }
+          break;
+        case 0xE280: // Up
+          Serial.println("IR received : Up");
+          if ( tilt.read() > TILT_MIN + TILT_STEP ) {
+            tilt.write( tilt.read() - TILT_STEP );
+          }
+          break;
+        case 0xE240: // Down
+          Serial.println("IR received : Down");
+          if ( tilt.read() < TILT_MAX - TILT_STEP ) {
+            tilt.write( tilt.read() + TILT_STEP );
+          }
+          break;
+        default:
+          Serial.println("IR received : Unknown");
+          // print() & println() can't handle printing long longs. (uint64_t)
+          // So we have to print the top and bottom halves separately.
+          if (results.value >> 32) Serial.print((uint32_t) (results.value >> 32), HEX);
+          Serial.println((uint32_t) (results.value & 0xFFFFFFFF), HEX);
+          break;
+      }
+
+      irrecv.resume();  // Receive the next value
+
     }
+#endif
 
-    irrecv.resume();  // Receive the next value
-
-  }
     // OTA
     ArduinoOTA.handle();
 
     // Blynk
-    if(Blynk.connected()) {
+    if (Blynk.connected()) {
       Blynk.run();
     }
     else {
